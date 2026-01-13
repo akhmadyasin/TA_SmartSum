@@ -1,0 +1,11 @@
+flask
+flask-cors
+flask-socketio
+python-dotenv
+groq
+pyjwt
+requests
+yt-dlp
+eventlet==0.35.2
+greenlet>=3.0
+
