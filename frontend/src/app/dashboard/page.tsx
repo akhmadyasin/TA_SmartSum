@@ -34,27 +34,13 @@ export default function Dashboard() {
   const toggleListening = () => setListening((v) => !v);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
+  // statistics
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [wordsTranscribed, setWordsTranscribed] = useState(0);
+  const [summariesCreated, setSummariesCreated] = useState(0);
+
   // recent summaries
-  const [recentSummaries, setRecentSummaries] = useState<RecentSummary[]>([
-    {
-      id: "s1",
-      title: "Client Brief Summary",
-      description: "Latest summarize file opened",
-      time: "10 minutes ago",
-    },
-    {
-      id: "s2",
-      title: "Standup Notes Summary",
-      description: "Yesterday's highlights",
-      time: "25 minutes ago",
-    },
-    {
-      id: "s3",
-      title: "Interview Summary",
-      description: "Key talking points captured",
-      time: "1 hour ago",
-    },
-  ]);
+  const [recentSummaries, setRecentSummaries] = useState<RecentSummary[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -68,25 +54,59 @@ export default function Dashboard() {
       }
       setEmail(session.user.email || "");
       setMeta((session.user.user_metadata as UserMeta) || {});
+      
+      // Fetch collections data from Supabase
+      try {
+        const { data, error } = await supabase
+          .from("collections")
+          .select("original_text, summary_result, created_at, id")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false });
+
+        if (!error && data) {
+          // Calculate stats
+          const sessions = data.length;
+          let totalWords = 0;
+          let summaries = 0;
+
+          data.forEach((item: any) => {
+            if (item.original_text) {
+              totalWords += (item.original_text as string).split(/\s+/).length;
+            }
+            if (item.summary_result && item.summary_result.trim() !== "") {
+              summaries += 1;
+            }
+          });
+
+          setTotalSessions(sessions);
+          setWordsTranscribed(totalWords);
+          setSummariesCreated(summaries);
+
+          // Set recent summaries (top 3)
+          const recent = data.slice(0, 3).map((item: any) => ({
+            id: item.id,
+            title: `Session ${new Date(item.created_at).toLocaleDateString("id-ID")}`,
+            description: item.original_text?.substring(0, 100) || "No transcript",
+            time: new Date(item.created_at).toLocaleDateString("id-ID", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          }));
+          setRecentSummaries(recent);
+        }
+      } catch (err) {
+        console.error("Error fetching collections:", err);
+      }
+
       setLoading(false);
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
       if (!sess) router.replace("/login");
     });
-
-    // load recent summaries from localStorage if available
-    try {
-      const raw = localStorage.getItem("recentSummaries");
-      if (raw) {
-        const parsed = JSON.parse(raw) as RecentSummary[];
-        if (Array.isArray(parsed) && parsed.length) {
-          setRecentSummaries(parsed.slice(0, 4));
-        }
-      }
-    } catch {
-      // ignore parse errors and keep fallback
-    }
 
     return () => {
       mounted = false;
@@ -205,9 +225,9 @@ export default function Dashboard() {
         <div className={s.dashboardContainer} style={{ display: listening ? 'none' : 'block' }}>
           {/* ... (seluruh isi dashboard Anda yang sebelumnya ada di dalam {!listening ? (...)}) ... */}
           <div className={s.topCards}>
-            <div className={s.statsCard}><div className={s.cardIcon}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></div><div className={s.cardContent}><h3>Total Sessions</h3><div className={s.cardValue}>24</div><div className={s.cardSubtext}>+3 this week</div></div></div>
-            <div className={s.statsCard}><div className={s.cardIcon}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg></div><div className={s.cardContent}><h3>Words Transcribed</h3><div className={s.cardValue}>12,847</div><div className={s.cardSubtext}>+1,234 today</div></div></div>
-            <div className={s.statsCard}><div className={s.cardIcon}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg></div><div className={s.cardContent}><h3>Summaries Created</h3><div className={s.cardValue}>18</div><div className={s.cardSubtext}>+2 this week</div></div></div>
+            <div className={s.statsCard}><div className={s.cardIcon}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></div><div className={s.cardContent}><h3>Total Sessions</h3><div className={s.cardValue}>{totalSessions}</div><div className={s.cardSubtext}>sessions created</div></div></div>
+            <div className={s.statsCard}><div className={s.cardIcon}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg></div><div className={s.cardContent}><h3>Words Transcribed</h3><div className={s.cardValue}>{wordsTranscribed.toLocaleString()}</div><div className={s.cardSubtext}>total words</div></div></div>
+            <div className={s.statsCard}><div className={s.cardIcon}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg></div><div className={s.cardContent}><h3>Summaries Created</h3><div className={s.cardValue}>{summariesCreated}</div><div className={s.cardSubtext}>summaries done</div></div></div>
           </div>
           <div className={s.activitySection}>
             <h2><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px', display: 'inline-block', verticalAlign: 'middle'}}><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Summarize Activity</h2>
@@ -215,7 +235,7 @@ export default function Dashboard() {
           </div>
           <div className={s.recentSection}>
             <h2><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px', display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12,6 12,12 16,14"></polyline></svg> Recent Summaries</h2>
-            <div className={s.recentList}>{recentSummaries.map((item) => (<div key={item.id} className={s.recentItem}><div className={s.recentIcon}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg></div><div className={s.recentContent}><div className={s.recentTitle}>{item.title}</div><div className={s.recentDesc}>{item.description}</div><div className={s.recentTime}>{item.time}</div></div></div>))}</div>
+            <div className={s.recentList}>{recentSummaries.map((item) => (<div key={item.id} className={s.recentItem} onClick={() => router.push(`/detail/${item.id}`)} style={{cursor: 'pointer'}}><div className={s.recentIcon}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg></div><div className={s.recentContent}><div className={s.recentTitle}>{item.title}</div><div className={s.recentDesc}>{item.description}</div><div className={s.recentTime}>{item.time}</div></div></div>))}</div>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { diffWords } from "diff";
 import { supabaseBrowser } from "@/app/lib/supabaseClient";
@@ -64,6 +65,7 @@ function replaceSpokenPunctuation(text: string) {
 }
 
 export default function VoicePanel() {
+  const router = useRouter();
   const socketRef = useRef<Maybe<Socket>>(null);
   const recognitionRef = useRef<any>(null);
   const summaryEditorRef = useRef<HTMLDivElement>(null);
@@ -90,6 +92,7 @@ export default function VoicePanel() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>("");
+  const [selectedMode, setSelectedMode] = useState<string>("patologi");
   
   const showToast = (msg: string, type: ToastType = "success") => {
     setToast({ msg, type });
@@ -118,7 +121,7 @@ export default function VoicePanel() {
     
     fetch(`${BACKEND_ORIGIN}/get_summary_mode`)
       .then((r) => r.json())
-      .then((data) => { if (data.mode) currentModeRef.current = data.mode; })
+      .then((data) => { if (data.mode) { currentModeRef.current = data.mode; setSelectedMode(data.mode); } })
       .catch((err) => console.error("Gagal mengambil mode:", err));
 
     const socket = io(BACKEND_ORIGIN, { transports: ["websocket"] });
@@ -377,7 +380,7 @@ export default function VoicePanel() {
       setIsSaving(true);
       try {
         const supabase = supabaseBrowser();
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("collections")
           .insert({
             user_id: userId,
@@ -387,7 +390,8 @@ export default function VoicePanel() {
             metadata: {
               save_at: new Date().toISOString(),
             },
-          });
+          })
+          .select();
 
         if (error) {
           showToast(`Gagal menyimpan: ${error.message}`, "error");
@@ -401,6 +405,12 @@ export default function VoicePanel() {
         lastFinalSummaryRef.current = "";
         if (summaryEditorRef.current) summaryEditorRef.current.innerHTML = "";
         setIsSaving(false);
+        
+        // Navigate to detail page of newly created collection
+        if (data && data.length > 0) {
+          const newId = data[0].id;
+          router.push(`/detail/${newId}`);
+        }
       } catch (err: any) {
         showToast(`Error saat menyimpan: ${err?.message || err}`, "error");
         setIsSaving(false);
@@ -486,6 +496,37 @@ export default function VoicePanel() {
                     {uploadStatus === 'error' ? `Error: ${uploadError}` : `Status: ${uploadStatus}...`}
                 </div>
             )}
+
+            {/* =================================== */}
+            {/* Separator */}
+            {/* =================================== */}
+            <div style={{ borderLeft: '1px solid #d1d9e6', height: '30px' }}></div>
+            
+            {/* Format Selector */}
+            <select
+              value={selectedMode}
+              onChange={(e) => {
+                setSelectedMode(e.target.value);
+                currentModeRef.current = e.target.value;
+                fetch(`${BACKEND_ORIGIN}/set_summary_mode`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ mode: e.target.value }),
+                }).catch(err => console.error("Gagal set mode:", err));
+              }}
+              disabled={isProcessing}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #d1d9e6',
+                backgroundColor: isProcessing ? '#f0f0f0' : '#fff',
+                fontSize: '14px',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <option value="patologi">Ringkasan Patologi</option>
+              <option value="dokter_hewan">Ringkasan Dokter Hewan</option>
+            </select>
              {/* =================================== */}
           </div>
         </div>
