@@ -69,7 +69,7 @@
   content: ""; position: absolute; height: 18px; width: 18px; left: 2px; bottom: 2px;
   background: #9ca3af; transition: .3s; border-radius: 50%;
 }
-.toggle input:checked + .slider { background: #667eea; border-color: #667eea; }
+.toggle input:checked + .slider { background: #ac7f5e; border-color: #ac7f5e; }
 .toggle input:checked + .slider:before { transform: translateX(24px); background: #fff; }
 
 /* select */
@@ -78,14 +78,14 @@
   width: 100%; padding: 8px 12px; background: #ffffff; color: #1f2937;
   border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none;
 }
-.selectWrap select:focus { border-color: #667eea; }
+.selectWrap select:focus { border-color: #ac7f5e; }
 
 /* input */
 .input {
   width: 100%; padding: 10px 12px; background: #ffffff; color: #1f2937;
   border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none;
 }
-.input:focus { border-color: #667eea; }
+.input:focus { border-color: #ac7f5e; }
 .input::placeholder { color: #9ca3af; }
 
 /* range */
@@ -95,9 +95,9 @@
   -webkit-appearance: none;
 }
 .range::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 18px; height: 18px; background: #667eea; border-radius: 50%; cursor: pointer;
+  -webkit-appearance: none; width: 18px; height: 18px; background: #ac7f5e; border-radius: 50%; cursor: pointer;
 }
-.range::-moz-range-thumb { width: 18px; height: 18px; background: #667eea; border-radius: 50%; cursor: pointer; border: none; }
+.range::-moz-range-thumb { width: 18px; height: 18px; background: #ac7f5e; border-radius: 50%; cursor: pointer; border: none; }
 .rangeValue { min-width: 40px; text-align: center; font-size: 13px; color: #1f2937; font-weight: 500; }
 
 /* status */
@@ -105,7 +105,7 @@
   display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
   padding: 4px 8px; border-radius: 6px; font-weight: 500;
 }
-.statusActive { background: rgba(102,126,234,.1); color: #667eea; border: 1px solid rgba(102,126,234,.2); }
+.statusActive { background: rgba(172,127,94,.1); color: #ac7f5e; border: 1px solid rgba(172,127,94,.2); }
 .statusInactive { background: rgba(239,68,68,.1); color: #ef4444; border: 1px solid rgba(239,68,68,.2); }
 
 /* actions */
@@ -114,7 +114,7 @@
   border-top: 1px solid #e5e7eb;
 }
 .btnSave {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ac7f5e 0%, #8b6749 100%);
   border: 1px solid rgba(102,126,234,.3); color: #fff;
   padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer;
   transition: all .2s; box-shadow: 0 4px 12px rgba(102,126,234,.2);

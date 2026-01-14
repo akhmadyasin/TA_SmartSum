@@ -236,8 +236,8 @@ export default function SharePage() {
           }}
         >
           <Image
-            src="/logo_neurabot.jpg"
-            alt="Logo Neurabot"
+            src="/logo-smartsum.png"
+            alt="Logo SmartSum"
             width={36}
             height={36}
             style={{ borderRadius: "4px" }}
@@ -249,7 +249,7 @@ export default function SharePage() {
               color: "#333",
             }}
           >
-            Neurabot
+            SmartSum
           </div>
         </div>
         <div
@@ -610,7 +610,7 @@ export default function SharePage() {
               textAlign: "center",
             }}
           >
-            © 2025 Neurabot - Shared Transcription
+            © 2025 SmartSum - Shared Transcription
           </div>
         </div>
       </main>

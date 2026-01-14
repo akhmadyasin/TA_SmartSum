@@ -212,8 +212,8 @@ export default function SettingsPage() {
       <aside className={s.sidebar}>
         <div className={s.sbInner}>
           <div className={s.brand}>
-            <Image src="/logo_neurabot.jpg" alt="Logo Neurabot" width={36} height={36} className={s.brandImg} />
-            <div className={s.brandName}>Neurabot</div>
+            <Image src="/logo-smartsum.png" alt="Logo SmartSum" width={36} height={36} className={s.brandImg} />
+            <div className={s.brandName}>SmartSum</div>
           </div>
 
           <nav className={s.nav} aria-label="Sidebar">
@@ -241,7 +241,7 @@ export default function SettingsPage() {
           </nav>
 
           <div className={s.sbFooter}>
-            <div style={{ opacity: 0.6 }}>© 2025 Neurabot</div>
+            <div style={{ opacity: 0.6 }}>© 2025 SmartSum</div>
           </div>
         </div>
       </aside>

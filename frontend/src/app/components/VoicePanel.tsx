@@ -74,7 +74,7 @@ export default function VoicePanel() {
   const clearHlTimerRef = useRef<any>(null);
   const autoSummarizeTimerRef = useRef<any>(null);
   const summarizeInFlightRef = useRef<boolean>(false);
-  const currentModeRef = useRef<string>("patologi");
+  const currentModeRef = useRef<string>("default");
   // NEW: Ref for polling interval
   const pollIntervalRef = useRef<any>(null);
 
@@ -92,7 +92,7 @@ export default function VoicePanel() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>("");
-  const [selectedMode, setSelectedMode] = useState<string>("patologi");
+  const [selectedMode, setSelectedMode] = useState<string>("default");
   
   const showToast = (msg: string, type: ToastType = "success") => {
     setToast({ msg, type });
@@ -524,8 +524,8 @@ export default function VoicePanel() {
                 cursor: isProcessing ? 'not-allowed' : 'pointer',
               }}
             >
-              <option value="patologi">Ringkasan Patologi</option>
-              <option value="dokter_hewan">Ringkasan Dokter Hewan</option>
+              <option value="default">Ringkasan Eksekutif (Default)</option>
+              <option value="cornell">Peta Konsep Cornell</option>
             </select>
              {/* =================================== */}
           </div>

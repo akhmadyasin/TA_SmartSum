@@ -4,6 +4,7 @@ import time
 import re
 import uuid
 import traceback
+import textwrap
 from threading import Event, Thread
 from datetime import datetime
 import whisper # <-- NEW: For transcription
@@ -68,89 +69,111 @@ def strip_think(text: str) -> str:
     """Hapus blok <think>...</think> bila ada."""
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
 
-def build_prompt(text: str, mode: str = "patologi") -> str:
-    mode = (mode or "patologi").lower()
-    if mode == "dokter_hewan":
-        return f"""
-Anda adalah seorang dokter hewan berpengalaman.
-Langsung berikan ringkasan final saja, tanpa proses berpikir.
-Ikuti format:
+def build_prompt(transcript_text: str, template_mode: str = "default") -> str:
+    """
+    Membangun prompt untuk model AI berdasarkan template ringkasan yang dipilih.
 
-**Ringkasan Klinis Hewan**
+    Args:
+        transcript_text (str): Teks transkrip lengkap yang akan diringkas.
+        template_mode (str, optional): Mode template ringkasan.
+                                       Pilihan: "default" (Ringkasan Eksekutif) atau "cornell" (Peta Konsep Cornell).
+                                       Defaults to "default".
 
-**Identitas Hewan:**
-- ...
+    Returns:
+        str: Prompt lengkap yang siap dikirim ke API model AI (misal: OpenAI GPT).
+    """
 
-**Alasan Kunjungan:**
-- ...
+    # Normalisasi input mode agar huruf kecil semua dan menangani input None/kosong
+    mode = (template_mode or "default").lower().strip()
 
-**Riwayat Medis:**
-- ...
+    # --------------------------------------------------------------------------
+    # TEMPLATE 1: MODE DEFAULT (RINGKASAN EKSEKUTIF)
+    # Fokus: Review cepat, padat, poin-poin kunci. Cocok untuk kuliah umum.
+    # --------------------------------------------------------------------------
+    if mode == "default":
+        # Menggunakan textwrap.dedent agar penulisan prompt di kode rapi (tidak ada indentasi berlebih)
+        prompt_content = textwrap.dedent(f"""
+            Peran: Anda adalah asisten belajar mahasiswa yang sangat efisien dan cerdas.
 
-**Pemeriksaan Fisik:**
-- ...
+            Tugas: Bacalah transkrip kuliah yang diberikan di bawah ini. Tugas utama Anda adalah membuat **Ringkasan Eksekutif** yang padat, jelas, dan mudah dipahami mahasiswa dalam waktu singkat (kurang dari 5 menit membaca).
 
-**Pemeriksaan Penunjang:**
-- ...
+            Instruksi Format Output (PENTING):
+            Output HARUS mengikuti struktur di bawah ini secara ketat. Jangan tambahkan teks pengantar atau penutup di luar struktur ini.
 
-**Diagnosis / Implikasi:**
-- ...
+            **INTISARI UTAMA (The Big Idea)**
+            [Tuliskan satu paragraf pendek di sini, maksimal 3 kalimat. Jelaskan ide paling penting atau "pesan utama" dari seluruh rekaman ini. Apa satu hal yang harus diingat mahasiswa?]
 
-**Rencana Penanganan:**
-- ...
+            **POIN-POIN KUNCI (Key Takeaways)**
+            [Buatlah daftar bullet points berisi 5-7 poin paling penting dari materi.]
+            * Gunakan format: **[Istilah/Konsep Kunci]**: [Penjelasan singkat dan jelas tentang konsep tersebut].
+            * Pastikan penjelasan akurat secara akademis namun menggunakan bahasa Indonesia yang mudah dimengerti mahasiswa.
+            * Jangan bertele-tele. Fokus pada definisi, fungsi, atau hubungan antar konsep.
 
-**Prognosis:**
-- ...
+            Aturan Ketat:
+            1. HANYA ekstrak informasi dan fakta yang ada pada teks transkrip sumber. Jangan berhalusinasi atau menambah fakta dari luar.
+            2. Pertahankan angka, satuan, atau istilah teknis penting persis seperti yang tertulis jika relevan.
+            3. Gunakan Bahasa Indonesia yang baku, akademis, namun tidak kaku.
+            4. Langsung berikan hasil ringkasan final, TANPA menampilkan proses berpikir Anda.
 
-**Rekomendasi / Tindak Lanjut:**
-- ...
+            ---
+            TEKS TRANSKRIP SUMBER:
+            {transcript_text}
+            ---
 
-Aturan ketat:
-- Hanya ekstrak fakta yang ada pada teks sumber.
-- Pertahankan angka/satuan persis seperti tertulis.
-- Jangan menambah atau mengubah fakta yang tidak ada di teks.
+            RINGKASAN EKSEKUTIF:
+        """)
+        return prompt_content.strip() # Menghapus spasi kosong di awal/akhir string
 
-Teks sumber:
-{text}
+    # --------------------------------------------------------------------------
+    # TEMPLATE 2: MODE CORNELL (PETA KONSEP / STUDY GUIDE)
+    # Fokus: Pemahaman mendalam, persiapan ujian, memisahkan konsep dan detail.
+    # --------------------------------------------------------------------------
+    elif mode == "cornell":
+        prompt_content = textwrap.dedent(f"""
+            Peran: Anda adalah tutor akademik ahli yang berspesialisasi dalam membuat catatan belajar yang efektif menggunakan metode Cornell Notes.
 
-Ringkasan:
-"""
+            Tugas: Bacalah transkrip kuliah di bawah ini. Analisis materi tersebut untuk mengidentifikasi konsep-konsep kunci, istilah penting, atau pertanyaan utama yang dibahas. Kemudian, strukturkan informasi tersebut ke dalam format catatan Cornell.
+
+            Instruksi Format Output (PENTING):
+            Output HARUS mengikuti struktur di bawah ini secara ketat untuk memisahkan antara "Kata Kunci/Pertanyaan Pemicu" (kolom kiri Cornell) dan "Penjelasan Detail" (kolom kanan Cornell).
+
+            **KATA KUNCI / PERTANYAAN PEMICU 1:**
+            [Tuliskan satu istilah teknis penting, konsep utama, atau pertanyaan besar yang dijawab di bagian ini. Ini berfungsi sebagai "judul kecil" atau pemicu ingatan.]
+
+            **PENJELASAN DETAIL 1:**
+            [Berikan penjelasan yang komprehensif namun ringkas untuk poin di atas. Gunakan bullet points jika ada sub-poin, langkah-langkah, atau rincian penting.]
+            * [Sub-poin detail...]
+            * [Sub-poin detail...]
+
+            ---
+            (Ulangi blok "KATA KUNCI/PERTANYAAN" dan "PENJELASAN DETAIL" ini untuk 3-5 konsep utama lainnya yang Anda temukan dalam transkrip. Pisahkan setiap blok dengan garis pemisah "---" seperti di atas.)
+            ---
+
+            **KESIMPULAN (SUMMARY):**
+            [Di bagian paling bawah, tuliskan satu paragraf pendek (maksimal 2-3 kalimat) yang merangkum inti sari dari keseluruhan materi kuliah ini dalam bahasa yang sangat sederhana.]
+
+            Aturan Ketat:
+            1. Fokus pada mengidentifikasi struktur logis dari materi kuliah.
+            2. Penjelasan harus AKURAT secara materi berdasarkan transkrip.
+            3. Jangan membuat konsep sendiri; semua harus berasal dari transkrip.
+            4. Langsung berikan hasil catatan format Cornell final, TANPA proses berpikir.
+
+            ---
+            TEKS TRANSKRIP SUMBER:
+            {transcript_text}
+            ---
+
+            CATATAN CORNELL NOTES:
+        """)
+        return prompt_content.strip()
+
+    # --------------------------------------------------------------------------
+    # FALLBACK (JIKA MODE TIDAK DIKENALI)
+    # Jika ada typo pada input mode, kembalikan ke mode default agar aman.
+    # --------------------------------------------------------------------------
     else:
-        return f"""
-Anda adalah seorang dokter patologi berpengalaman.
-Langsung berikan ringkasan final saja, tanpa proses berpikir.
-Ikuti format:
-
-**Ringkasan Patologi Klinis**
-
-**Jenis Pemeriksaan:**
-- ...
-
-**Jenis Spesimen:**
-- ...
-
-**Hasil Pemeriksaan Makroskopik:**
-- ...
-
-**Hasil Pemeriksaan Mikroskopik:**
-- ...
-
-**Diagnosis:**
-- ...
-
-**Rekomendasi / Tindak Lanjut:**
-- ...
-
-Aturan ketat:
-- Hanya ekstrak fakta yang ada pada teks sumber.
-- Pertahankan angka/satuan persis seperti tertulis.
-- Jangan menambah atau mengubah fakta yang tidak ada di teks.
-
-Teks sumber:
-{text}
-
-Ringkasan:
-"""
+        # Secara rekursif panggil fungsi ini lagi dengan mode "default"
+        return build_prompt(transcript_text, template_mode="default")
 
 
 def _parse_retry_after_seconds(message: str):
@@ -265,7 +288,7 @@ def settings_page():
     return render_template("settings.html")
 
 # di bagian atas file api.py (global)
-current_summary_mode = "patologi"  # default
+current_summary_mode = "default"  # default
 
 
 @app.route("/set_summary_mode", methods=["POST"])
@@ -275,7 +298,7 @@ def set_summary_mode():
     try:
         data = request.get_json(force=True, silent=True) or {}
         mode = (data.get("mode") or "").strip().lower()
-        allowed = ["patologi", "dokter_hewan"]
+        allowed = ["default", "cornell"]
         if mode not in allowed:
             return jsonify({"error": "mode_invalid", "allowed": allowed}), 400
         current_summary_mode = mode

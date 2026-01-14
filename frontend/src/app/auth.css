@@ -82,8 +82,8 @@
 
 .form-box input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #ac7f5e;
+  box-shadow: 0 0 0 4px rgba(172, 127, 94, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
 

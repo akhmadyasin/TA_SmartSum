@@ -156,22 +156,55 @@ export default function CollectionsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus koleksi ini?")) return;
 
+    if (!userId) {
+      alert("Error: User ID tidak ditemukan. Silakan login ulang.");
+      return;
+    }
+
+    console.log("Attempting to delete collection:", id, "for user:", userId);
+
     try {
-      // Delete from Supabase
-      const { error } = await supabase
+      // Delete from Supabase with user_id check for RLS policy
+      const { error, data, count } = await supabase
         .from("collections")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select();
+
+      console.log("Delete response:", { error, data, count });
 
       if (error) {
+        console.error("Supabase delete error:", error);
         alert("Gagal menghapus: " + error.message);
         return;
       }
 
-      // Update UI
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        console.warn("No rows deleted - checking collection ownership...");
+        // Try to fetch the collection to check if it exists and belongs to user
+        const { data: collectionData } = await supabase
+          .from("collections")
+          .select("id, user_id")
+          .eq("id", id)
+          .single();
+        
+        if (collectionData) {
+          console.log("Collection found. User ID on collection:", collectionData.user_id, "Current user ID:", userId);
+        } else {
+          console.log("Collection not found");
+        }
+        
+        alert("Gagal menghapus: Anda tidak punya akses untuk menghapus koleksi ini.");
+        return;
+      }
+
+      // Only update UI after successful delete
       setItems((prev) => prev.filter((x) => x.id !== id));
       alert("Koleksi berhasil dihapus");
     } catch (err: any) {
+      console.error("Error saat menghapus:", err);
       alert("Error saat menghapus: " + (err?.message || err));
     }
   };
@@ -237,13 +270,13 @@ export default function CollectionsPage() {
         <div className={s.sbInner}>
           <div className={s.brand}>
             <Image
-              src="/logo_neurabot.jpg"
-              alt="Logo Neurabot"
+              src="/logo-smartsum.png"
+              alt="Logo SmartSum"
               width={36}
               height={36}
               className={s.brandImg}
             />
-            <div className={s.brandName}>Neurabot</div>
+            <div className={s.brandName}>SmartSum</div>
           </div>
 
           <nav className={s.nav} aria-label="Sidebar">
@@ -271,7 +304,7 @@ export default function CollectionsPage() {
           </nav>
 
           <div className={s.sbFooter}>
-            <div style={{ opacity: 0.6 }}>© 2025 Neurabot</div>
+            <div style={{ opacity: 0.6 }}>© 2025 SmartSum</div>
           </div>
         </div>
       </aside>
