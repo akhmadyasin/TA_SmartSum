@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import s from "@/app/styles/dashboard.module.css";
 import VoicePanel from "@/app/components/VoicePanel";
+import ProfileModal from "@/app/components/ProfileModal";
 import { supabaseBrowser } from "@/app/lib/supabaseClient";
 
 type UserMeta = {
@@ -28,11 +29,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string>("");
   const [meta, setMeta] = useState<UserMeta>({});
+  const [userId, setUserId] = useState<string>("");
+  const [fullName, setFullName] = useState<string>("");
 
   // ui state
   const [listening, setListening] = useState(false);
   const toggleListening = () => setListening((v) => !v);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // statistics
@@ -54,7 +58,23 @@ export default function Dashboard() {
         return;
       }
       setEmail(session.user.email || "");
+      setUserId(session.user.id);
       setMeta((session.user.user_metadata as UserMeta) || {});
+      
+      // Fetch full_name from profiles table
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", session.user.id)
+          .single();
+
+        if (!profileError && profileData) {
+          setFullName(profileData.full_name || "");
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      }
       
       // Fetch collections data from Supabase
       try {
@@ -139,11 +159,20 @@ export default function Dashboard() {
     setShowProfileDropdown(!showProfileDropdown);
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const closeProfileDropdown = () => {
     setShowProfileDropdown(false);
   };
 
-  const username = meta.username || "Faisal";
+  const username = fullName || meta.username || "User";
   const avatar   = meta.avatar_url || "https://i.pravatar.cc/64?img=12";
 
   if (loading) {
@@ -204,14 +233,29 @@ export default function Dashboard() {
               <span className={s.btnLabel}>{listening ? "Close Panel" : "Start Listening"}</span>
             </button>
             <div className={s.avatar} onClick={toggleProfileDropdown}>
-              <Image src={avatar} alt="Foto profil" width={40} height={40} unoptimized />
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #ac7f5e 0%, #8b6749 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  fontWeight: "700",
+                  fontSize: "16px",
+                }}
+              >
+                {getInitials(username)}
+              </div>
               <div className={s.meta}>
                 <div className={s.name}>{username}</div>
                 <div className={s.role}></div>
               </div>
               {showProfileDropdown && (
                 <div className={s.profileDropdown}>
-                  <button className={s.dropdownItem} onClick={closeProfileDropdown}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile</button>
+                  <button className={s.dropdownItem} onClick={() => { closeProfileDropdown(); setShowProfileModal(true); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile</button>
                   <button className={s.dropdownItem} onClick={onLogout}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16,17 21,12 16,7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Logout</button>
                 </div>
               )}
@@ -316,6 +360,16 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
-    </div>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        email={email}
+        username={username}
+        userId={userId}
+        onSaveSuccess={(newName) => setFullName(newName)}
+      />
+    </div>
   );
 }

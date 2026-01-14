@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/app/lib/supabaseClient";
 import { generateShareToken } from "@/app/lib/shareUtils";
+import Header from "@/app/components/Header";
 import s from "@/app/styles/dashboard.module.css"; // reuse layout styles
 import h from "@/app/styles/collections.module.css";   // styles khusus collections
 
@@ -51,7 +52,6 @@ export default function CollectionsPage() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string>("");
   const [meta, setMeta] = useState<UserMeta>({});
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   
   const [query, setQuery] = useState("");
@@ -117,17 +117,12 @@ export default function CollectionsPage() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showProfileDropdown) {
-        const target = event.target as Element;
-        if (!target.closest(`.${s.avatar}`)) {
-          setShowProfileDropdown(false);
-        }
-      }
+      // placeholder - dropdown handling moved to Header component
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showProfileDropdown]);
+  }, []);
 
   const username = meta.username || email.split("@")[0] || "User";
   const avatar = meta.avatar_url || "https://i.pravatar.cc/64?img=12";
@@ -245,14 +240,6 @@ export default function CollectionsPage() {
     router.replace("/login");
   };
 
-  const toggleProfileDropdown = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-  };
-
-  const closeProfileDropdown = () => {
-    setShowProfileDropdown(false);
-  };
-
   if (loading) {
     return (
       <div className={s.app}>
@@ -310,60 +297,7 @@ export default function CollectionsPage() {
       </aside>
 
       {/* TOPBAR */}
-      <header className={s.topbar}>
-        <div className={s.tbWrap}>
-          <div className={s.leftGroup}>
-            <div className={s.search} role="search">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-              <input
-                type="search"
-                placeholder="Search collections..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Search collections"
-              />
-            </div>
-          </div>
-
-          <div className={s.rightGroup}>
-            <div className={s.avatar} onClick={toggleProfileDropdown}>
-              <Image
-                src={avatar}
-                alt="Foto profil"
-                width={36}
-                height={36}
-                unoptimized
-              />
-              <div className={s.meta}>
-                <div className={s.name}>{username}</div>
-              </div>
-              
-              {showProfileDropdown && (
-                <div className={s.profileDropdown}>
-                  <button className={s.dropdownItem} onClick={closeProfileDropdown}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    Profile
-                  </button>
-                  <button className={s.dropdownItem} onClick={onLogout}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                      <polyline points="16,17 21,12 16,7"></polyline>
-                      <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header username={username} />
 
       {/* CONTENT */}
       <main className={s.content}>

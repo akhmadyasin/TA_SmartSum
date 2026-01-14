@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { supabaseBrowser } from "@/app/lib/supabaseClient";
 import { generateShareToken } from "@/app/lib/shareUtils";
+import Header from "@/app/components/Header";
 import s from "@/app/styles/dashboard.module.css";
 import d from "@/app/styles/detail.module.css";
 
@@ -31,8 +32,6 @@ export default function DetailPage() {
   // auth/session
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string>("");
-  const [meta, setMeta] = useState<UserMeta>({});
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   // detail data
@@ -49,7 +48,6 @@ export default function DetailPage() {
         return;
       }
       setEmail(session.user.email || "");
-      setMeta((session.user.user_metadata as UserMeta) || {});
       setUserId(session.user.id);
       setLoading(false);
     })();
@@ -110,29 +108,19 @@ export default function DetailPage() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showProfileDropdown) {
-        const target = event.target as Element;
-        if (!target.closest(`.${s.avatar}`)) {
-          setShowProfileDropdown(false);
-        }
+      const target = event.target as Element;
+      if (!target.closest(`.${s.avatar}`)) {
+        // Close any dropdowns if needed
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showProfileDropdown]);
+  }, []);
 
   const onLogout = async () => {
     await supabase.auth.signOut();
     router.replace("/login");
-  };
-
-  const toggleProfileDropdown = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-  };
-
-  const closeProfileDropdown = () => {
-    setShowProfileDropdown(false);
   };
 
   const handleCopy = (text: string) => {
@@ -198,8 +186,7 @@ export default function DetailPage() {
       alert(`Error: ${err?.message || "Failed to create share link"}`);
     }
   };
-  const username = meta.username || email.split("@")[0] || "User";
-  const avatar = meta.avatar_url || "https://i.pravatar.cc/64?img=12";
+  const username = email.split("@")[0] || "User";
 
   if (loading) {
     return (
@@ -268,41 +255,7 @@ export default function DetailPage() {
       </aside>
 
       {/* TOPBAR */}
-      <header className={s.topbar}>
-        <div className={s.tbWrap}>
-          <div className={s.leftGroup}>
-          </div>
-
-          <div className={s.rightGroup}>
-            <div className={s.avatar} onClick={toggleProfileDropdown}>
-              <Image src={avatar} alt="Foto profil" width={36} height={36} unoptimized />
-              <div className={s.meta}>
-                <div className={s.name}>{username}</div>
-              </div>
-              
-              {showProfileDropdown && (
-                <div className={s.profileDropdown}>
-                  <button className={s.dropdownItem} onClick={closeProfileDropdown}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    Profile
-                  </button>
-                  <button className={s.dropdownItem} onClick={onLogout}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                      <polyline points="16,17 21,12 16,7"></polyline>
-                      <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header username={username} />
 
       {/* CONTENT */}
       <main className={s.content}>
