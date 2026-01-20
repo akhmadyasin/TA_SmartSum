@@ -132,7 +132,7 @@ export default function LoginPage() {
       </div>
 
       <div className="image-side">
-        <img src="/login.jpg" alt="Login Illustration" />
+        <img src="/login_image.png" alt="Login Illustration" />
       </div>
     </div>
   );

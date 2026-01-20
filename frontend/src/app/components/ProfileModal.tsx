@@ -246,37 +246,6 @@ export default function ProfileModal({
           {/* Buttons */}
           <div style={{ display: "flex", gap: "12px" }}>
             <button
-              onClick={handleSave}
-              disabled={isSaving}
-              style={{
-                flex: 1,
-                padding: "10px 16px",
-                backgroundColor: "#10b981",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                opacity: isSaving ? 0.7 : 1,
-                transition: "all 0.3s ease",
-              }}
-              onMouseEnter={(e) => {
-                const target = e.target as HTMLButtonElement;
-                if (!isSaving) {
-                  target.style.transform = "translateY(-2px)";
-                  target.style.boxShadow = "0 6px 20px rgba(16, 185, 129, 0.3)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = "translateY(0)";
-                target.style.boxShadow = "none";
-              }}
-            >
-              {isSaving ? "Menyimpan..." : "Simpan"}
-            </button>
-            <button
               onClick={onClose}
               style={{
                 flex: 1,
@@ -299,7 +268,38 @@ export default function ProfileModal({
                 target.style.backgroundColor = "#f3f4f6";
               }}
             >
-              Tutup
+              Batal
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              style={{
+                flex: 1,
+                padding: "10px 16px",
+                backgroundColor: "#ac7f5e",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: isSaving ? "not-allowed" : "pointer",
+                opacity: isSaving ? 0.7 : 1,
+                transition: "all 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLButtonElement;
+                if (!isSaving) {
+                  target.style.transform = "translateY(-2px)";
+                  target.style.boxShadow = "0 6px 20px rgba(172, 127, 94, 0.3)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLButtonElement;
+                target.style.transform = "translateY(0)";
+                target.style.boxShadow = "none";
+              }}
+            >
+              {isSaving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </div>

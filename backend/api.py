@@ -100,10 +100,10 @@ def build_prompt(transcript_text: str, template_mode: str = "default") -> str:
             Instruksi Format Output (PENTING):
             Output HARUS mengikuti struktur di bawah ini secara ketat. Jangan tambahkan teks pengantar atau penutup di luar struktur ini.
 
-            **INTISARI UTAMA (The Big Idea)**
+            **INTISARI UTAMA**
             [Tuliskan satu paragraf pendek di sini, maksimal 3 kalimat. Jelaskan ide paling penting atau "pesan utama" dari seluruh rekaman ini. Apa satu hal yang harus diingat mahasiswa?]
 
-            **POIN-POIN KUNCI (Key Takeaways)**
+            **POIN-POIN KUNCI**
             [Buatlah daftar bullet points berisi 5-7 poin paling penting dari materi.]
             * Gunakan format: **[Istilah/Konsep Kunci]**: [Penjelasan singkat dan jelas tentang konsep tersebut].
             * Pastikan penjelasan akurat secara akademis namun menggunakan bahasa Indonesia yang mudah dimengerti mahasiswa.

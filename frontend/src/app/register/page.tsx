@@ -104,7 +104,7 @@ export default function RegisterPage() {
       </div>
 
       <div className="image-side">
-        <img src="/login.jpg" alt="Register Illustration" />
+        <img src="/login_image.png" alt="Register Illustration" />
       </div>
     </div>
   );

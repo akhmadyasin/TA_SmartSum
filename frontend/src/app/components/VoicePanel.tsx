@@ -449,15 +449,15 @@ export default function VoicePanel() {
                   padding: '8px 16px',
                   borderRadius: '6px',
                   border: 'none',
-                  backgroundColor: isProcessing ? '#b0d4ff' : '#007bff',
+                  backgroundColor: isProcessing ? '#d4c5b9' : '#ac7f5e',
                   color: 'white',
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: isProcessing ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s',
                 }}
-                onMouseEnter={(e) => !isProcessing && (e.currentTarget.style.backgroundColor = '#0056b3')}
-                onMouseLeave={(e) => !isProcessing && (e.currentTarget.style.backgroundColor = '#007bff')}
+                onMouseEnter={(e) => !isProcessing && (e.currentTarget.style.backgroundColor = '#8b6344')}
+                onMouseLeave={(e) => !isProcessing && (e.currentTarget.style.backgroundColor = '#ac7f5e')}
               >
                 Submit
               </button>
@@ -524,7 +524,7 @@ export default function VoicePanel() {
                 cursor: isProcessing ? 'not-allowed' : 'pointer',
               }}
             >
-              <option value="default">Ringkasan Eksekutif (Default)</option>
+              <option value="default">Ringkasan Default</option>
               <option value="cornell">Peta Konsep Cornell</option>
             </select>
              {/* =================================== */}
@@ -533,7 +533,7 @@ export default function VoicePanel() {
 
         {/* Video Section */}
         <div className="video-section">
-          {videoPreview ? (
+          {videoPreview && (
             <video 
               width="100%" 
               height="360" 
@@ -543,14 +543,6 @@ export default function VoicePanel() {
               <source src={videoPreview} type={videoFile?.type || 'video/mp4'} />
               Browser Anda tidak mendukung video player.
             </video>
-          ) : (
-            <div className="video-placeholder">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="2" width="20" height="20" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <polygon points="10,7 10,17 17,12" fill="currentColor"/>
-              </svg>
-              <p>Video akan ditampilkan di sini</p>
-            </div>
           )}
         </div>
 
@@ -564,15 +556,10 @@ export default function VoicePanel() {
               className="editor"
               style={{ minHeight: 120, flexGrow: 1, marginBottom: 0, overflow: 'auto' }}
             >
-              <textarea
-                value={transcript}
-                placeholder="Transkrip suara atau file akan muncul di sini..."
-                readOnly
+              <div
                 id="transcript"
                 style={{
                   width: '100%',
-                  height: '100%',
-                  minHeight: 120,
                   border: 'none',
                   background: 'transparent',
                   resize: 'none',
@@ -581,10 +568,13 @@ export default function VoicePanel() {
                   outline: 'none',
                   boxSizing: 'border-box',
                   padding: 0,
-                  overflow: 'hidden',
-                  scrollbarWidth: 'thin',
+                  whiteSpace: 'pre-wrap',
+                  wordWrap: 'break-word',
+                  color: transcript ? '#1f2937' : '#9ca3af',
                 }}
-              />
+              >
+                {transcript || 'Transkrip suara atau file akan muncul di sini...'}
+              </div>
             </div>
           </div>
 
