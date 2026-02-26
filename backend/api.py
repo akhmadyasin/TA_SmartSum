@@ -76,94 +76,157 @@ def build_prompt(transcript_text: str, template_mode: str = "default") -> str:
     Args:
         transcript_text (str): Teks transkrip lengkap yang akan diringkas.
         template_mode (str, optional): Mode template ringkasan.
-                                       Pilihan: "default" (Ringkasan Eksekutif) atau "cornell" (Peta Konsep Cornell).
+                                       Pilihan: "default", "cornell", "prosedural", "qa".
                                        Defaults to "default".
 
     Returns:
-        str: Prompt lengkap yang siap dikirim ke API model AI (misal: OpenAI GPT).
+        str: Prompt lengkap yang siap dikirim ke API model AI (misal: Groq).
     """
+    import textwrap
 
     # Normalisasi input mode agar huruf kecil semua dan menangani input None/kosong
     mode = (template_mode or "default").lower().strip()
-
     # --------------------------------------------------------------------------
-    # TEMPLATE 1: MODE DEFAULT (RINGKASAN EKSEKUTIF)
-    # Fokus: Review cepat, padat, poin-poin kunci. Cocok untuk kuliah umum.
+    # TEMPLATE 1: DEFAULT (EXECUTIVE SUMMARY)
+    # Fokus: Intisari cepat untuk video teori umum atau webinar.
     # --------------------------------------------------------------------------
     if mode == "default":
-        # Menggunakan textwrap.dedent agar penulisan prompt di kode rapi (tidak ada indentasi berlebih)
         prompt_content = textwrap.dedent(f"""
-            Peran: Anda adalah asisten belajar mahasiswa yang sangat efisien dan cerdas.
+            Peran: Anda adalah asisten akademik yang ahli merangkum materi perkuliahan dengan sangat efisien.
 
-            Tugas: Bacalah transkrip kuliah yang diberikan di bawah ini. Tugas utama Anda adalah membuat **Ringkasan Eksekutif** yang padat, jelas, dan mudah dipahami mahasiswa dalam waktu singkat (kurang dari 5 menit membaca).
+            Tugas: Bacalah transkrip kuliah di bawah ini dan buatlah **Ringkasan Eksekutif** yang padat, jelas, dan bisa dipahami mahasiswa dalam waktu kurang dari 5 menit.
 
             Instruksi Format Output (PENTING):
-            Output HARUS mengikuti struktur di bawah ini secara ketat. Jangan tambahkan teks pengantar atau penutup di luar struktur ini.
+            Output HARUS mengikuti struktur di bawah ini secara ketat tanpa teks pengantar atau penutup.
 
             **INTISARI UTAMA**
-            [Tuliskan satu paragraf pendek di sini, maksimal 3 kalimat. Jelaskan ide paling penting atau "pesan utama" dari seluruh rekaman ini. Apa satu hal yang harus diingat mahasiswa?]
+            [Satu paragraf pendek maksimal 3 kalimat yang merangkum pesan inti dari seluruh materi]
 
             **POIN-POIN KUNCI**
-            [Buatlah daftar bullet points berisi 5-7 poin paling penting dari materi.]
-            * Gunakan format: **[Istilah/Konsep Kunci]**: [Penjelasan singkat dan jelas tentang konsep tersebut].
-            * Pastikan penjelasan akurat secara akademis namun menggunakan bahasa Indonesia yang mudah dimengerti mahasiswa.
-            * Jangan bertele-tele. Fokus pada definisi, fungsi, atau hubungan antar konsep.
+            [Daftar 5-7 poin paling krusial]
+            * **[Konsep/Istilah Kunci]**: [Penjelasan padat dan jelas].
+            * **[Konsep/Istilah Kunci]**: [Penjelasan padat dan jelas].
 
             Aturan Ketat:
-            1. HANYA ekstrak informasi dan fakta yang ada pada teks transkrip sumber. Jangan berhalusinasi atau menambah fakta dari luar.
-            2. Pertahankan angka, satuan, atau istilah teknis penting persis seperti yang tertulis jika relevan.
-            3. Gunakan Bahasa Indonesia yang baku, akademis, namun tidak kaku.
-            4. Langsung berikan hasil ringkasan final, TANPA menampilkan proses berpikir Anda.
+            1. HANYA gunakan fakta dari teks transkrip. JANGAN berhalusinasi.
+            2. Gunakan Bahasa Indonesia yang baku dan akademis, namun mudah dicerna.
+            3. Langsung berikan hasil ringkasan final.
 
             ---
             TEKS TRANSKRIP SUMBER:
             {transcript_text}
             ---
-
             RINGKASAN EKSEKUTIF:
         """)
-        return prompt_content.strip() # Menghapus spasi kosong di awal/akhir string
+        return prompt_content.strip()
 
     # --------------------------------------------------------------------------
-    # TEMPLATE 2: MODE CORNELL (PETA KONSEP / STUDY GUIDE)
-    # Fokus: Pemahaman mendalam, persiapan ujian, memisahkan konsep dan detail.
+    # TEMPLATE 2: CORNELL METHOD
+    # Fokus: Pemahaman mendalam, memisahkan istilah kunci dan detail penjelasan.
     # --------------------------------------------------------------------------
     elif mode == "cornell":
         prompt_content = textwrap.dedent(f"""
-            Peran: Anda adalah tutor akademik ahli yang berspesialisasi dalam membuat catatan belajar yang efektif menggunakan metode Cornell Notes.
+            Peran: Anda adalah tutor akademik ahli yang berspesialisasi dalam membuat catatan belajar menggunakan Metode Cornell.
 
-            Tugas: Bacalah transkrip kuliah di bawah ini. Analisis materi tersebut untuk mengidentifikasi konsep-konsep kunci, istilah penting, atau pertanyaan utama yang dibahas. Kemudian, strukturkan informasi tersebut ke dalam format catatan Cornell.
+            Tugas: Analisis transkrip kuliah di bawah ini dan strukturkan informasinya ke dalam format catatan Cornell.
 
             Instruksi Format Output (PENTING):
-            Output HARUS mengikuti struktur di bawah ini secara ketat untuk memisahkan antara "Kata Kunci/Pertanyaan Pemicu" (kolom kiri Cornell) dan "Penjelasan Detail" (kolom kanan Cornell).
+            Output HARUS secara ketat mengikuti format berulang di bawah ini untuk 4-6 konsep utama.
 
-            **KATA KUNCI / PERTANYAAN PEMICU 1:**
-            [Tuliskan satu istilah teknis penting, konsep utama, atau pertanyaan besar yang dijawab di bagian ini. Ini berfungsi sebagai "judul kecil" atau pemicu ingatan.]
-
-            **PENJELASAN DETAIL 1:**
-            [Berikan penjelasan yang komprehensif namun ringkas untuk poin di atas. Gunakan bullet points jika ada sub-poin, langkah-langkah, atau rincian penting.]
-            * [Sub-poin detail...]
-            * [Sub-poin detail...]
-
+            **[TULISKAN KATA KUNCI / ISTILAH / PERTANYAAN UTAMA]**
+            * [Penjelasan detail pertama yang relevan dengan kata kunci di atas]
+            * [Penjelasan detail kedua jika ada]
+            * [Contoh spesifik jika disebutkan dalam transkrip]
+            
             ---
-            (Ulangi blok "KATA KUNCI/PERTANYAAN" dan "PENJELASAN DETAIL" ini untuk 3-5 konsep utama lainnya yang Anda temukan dalam transkrip. Pisahkan setiap blok dengan garis pemisah "---" seperti di atas.)
+            (Ulangi format di atas untuk konsep-konsep selanjutnya)
             ---
 
             **KESIMPULAN (SUMMARY):**
-            [Di bagian paling bawah, tuliskan satu paragraf pendek (maksimal 2-3 kalimat) yang merangkum inti sari dari keseluruhan materi kuliah ini dalam bahasa yang sangat sederhana.]
+            [Satu paragraf 2-3 kalimat yang merangkum keseluruhan catatan Cornell di atas secara komprehensif.]
 
             Aturan Ketat:
-            1. Fokus pada mengidentifikasi struktur logis dari materi kuliah.
-            2. Penjelasan harus AKURAT secara materi berdasarkan transkrip.
-            3. Jangan membuat konsep sendiri; semua harus berasal dari transkrip.
-            4. Langsung berikan hasil catatan format Cornell final, TANPA proses berpikir.
+            1. Jangan membuat konsep sendiri; semua harus berasal dari transkrip sumber.
+            2. Pastikan pemisahan antara Kata Kunci dan Penjelasan sangat jelas.
 
             ---
             TEKS TRANSKRIP SUMBER:
             {transcript_text}
             ---
+            CATATAN CORNELL:
+        """)
+        return prompt_content.strip()
 
-            CATATAN CORNELL NOTES:
+    # --------------------------------------------------------------------------
+    # TEMPLATE 3: PROSEDURAL (KHUSUS MATKUL PRAKTIKUM/IT)
+    # Fokus: Mengekstrak langkah-langkah terurut, tools, dan hasil akhir.
+    # --------------------------------------------------------------------------
+    elif mode == "prosedural":
+        prompt_content = textwrap.dedent(f"""
+            Peran: Anda adalah asisten laboratorium IT dan instruktur teknis yang sangat terstruktur.
+
+            Tugas: Bacalah transkrip video tutorial/praktikum di bawah ini. Ekstrak informasi teknisnya dan ubah menjadi panduan *step-by-step* yang sistematis.
+
+            Instruksi Format Output (PENTING):
+            Output HARUS mengikuti struktur panduan teknis di bawah ini secara ketat.
+
+            **TUJUAN PRAKTIKUM / TUTORIAL**
+            [Satu kalimat singkat menjelaskan apa yang akan dibuat/dicapai dari video ini]
+
+            **PERSIAPAN / TOOLS YANG DIBUTUHKAN**
+            * [Nama aplikasi/alat/teori dasar yang disebutkan sebelum memulai langkah]
+            
+            **LANGKAH-LANGKAH (STEP-BY-STEP)**
+            1. **[Nama Langkah 1]**: [Instruksi detail apa yang harus dilakukan atau diklik].
+            2. **[Nama Langkah 2]**: [Instruksi detail kelanjutannya].
+            (Lanjutkan penomoran sesuai urutan yang ada di transkrip)
+
+            **HASIL AKHIR YANG DIHARAPKAN**
+            [Penjelasan singkat tentang bentuk akhir dari langkah-langkah di atas jika berhasil dilakukan]
+
+            Aturan Ketat:
+            1. Pertahankan urutan langkah persis seperti di video. JANGAN ada langkah yang terlewat atau terbalik.
+            2. Jika ada peringatan error atau tips penting dari dosen, masukkan ke dalam langkah yang bersangkutan.
+
+            ---
+            TEKS TRANSKRIP SUMBER:
+            {transcript_text}
+            ---
+            PANDUAN PROSEDURAL:
+        """)
+        return prompt_content.strip()
+
+    # --------------------------------------------------------------------------
+    # TEMPLATE 4: Q & A (PREDIKSI SOAL UJIAN / FLASHCARD)
+    # Fokus: Active recall, persiapan UTS/UAS berdasarkan materi video.
+    # --------------------------------------------------------------------------
+    elif mode == "qa":
+        prompt_content = textwrap.dedent(f"""
+            Peran: Anda adalah Dosen Penguji yang ahli menyusun soal ujian (Kuis/UTS/UAS) untuk mengevaluasi pemahaman mahasiswa.
+
+            Tugas: Bacalah transkrip kuliah di bawah ini. Identifikasi materi yang paling krusial, lalu buatlah 5 hingga 8 pasang Pertanyaan dan Jawaban (Q&A) yang memancing mahasiswa untuk berpikir kritis (*Active Recall*).
+
+            Instruksi Format Output (PENTING):
+            Output HARUS mengikuti struktur Q&A di bawah ini secara ketat.
+
+            **PERTANYAAN 1:** [Tuliskan pertanyaan konseptual, analitis, atau definisional berdasarkan materi]
+            **JAWABAN 1:** [Berikan jawaban yang akurat, tuntas, namun mudah dihafal berdasarkan transkrip]
+
+            **PERTANYAAN 2:** [Tuliskan pertanyaan selanjutnya]
+            **JAWABAN 2:** [Jawaban selanjutnya]
+
+            (Ulangi format ini sampai maksimal 8 pasang Q&A)
+
+            Aturan Ketat:
+            1. Pertanyaan tidak boleh sekadar "Apa itu X?". Buat juga pertanyaan "Mengapa..." atau "Bagaimana cara kerja...".
+            2. Jawaban HARUS valid dan murni diambil dari konteks transkrip yang diberikan.
+            3. Jangan tampilkan teks basa-basi, langsung berikan daftar Q&A.
+
+            ---
+            TEKS TRANSKRIP SUMBER:
+            {transcript_text}
+            ---
+            PREDIKSI SOAL & JAWABAN (Q&A):
         """)
         return prompt_content.strip()
 
@@ -203,28 +266,91 @@ def _summarize_text_internal(text: str, mode: str) -> str:
     summary_raw = (resp.choices[0].message.content or "").strip()
     return strip_think(summary_raw)
 
+def _validate_audio_file(filepath: str) -> bool:
+    """
+    Validate if the audio file has valid audio data.
+    Returns True if valid, False otherwise.
+    """
+    try:
+        # Check file exists and has size > 0
+        if not os.path.exists(filepath):
+            print(f"[Validate] File does not exist: {filepath}")
+            return False
+        
+        file_size = os.path.getsize(filepath)
+        if file_size == 0:
+            print(f"[Validate] File is empty (0 bytes): {filepath}")
+            return False
+        
+        if file_size < 1000:  # At least 1KB
+            print(f"[Validate] File too small ({file_size} bytes): {filepath}")
+            return False
+        
+        # Try to load audio with whisper to validate format
+        try:
+            import librosa
+            audio, sr = librosa.load(filepath, sr=16000, mono=True)
+            
+            # Check if audio has any samples
+            if len(audio) == 0:
+                print(f"[Validate] Audio is empty (no samples): {filepath}")
+                return False
+            
+            # Check if audio is not all silence (std dev should be > 0)
+            if audio.std() < 1e-5:
+                print(f"[Validate] Audio appears to be silent/noise: {filepath}")
+                return False
+            
+            print(f"[Validate] Audio file valid! Samples: {len(audio)}, Duration: {len(audio)/sr:.2f}s")
+            return True
+        except ImportError:
+            # If librosa not available, try with whisper's internal loader
+            print("[Validate] librosa not available, skipping detailed validation")
+            return True
+        except Exception as e:
+            print(f"[Validate] Error validating audio: {e}")
+            return False
+            
+    except Exception as e:
+        print(f"[Validate] Unexpected error: {e}")
+        return False
+
 def process_video_job(job_id: str, filepath: str, mode: str):
     """The background worker function."""
     try:
-        # 1. Transcribe
+        # 1. Validate audio file
+        print(f"[Job {job_id}] Validating audio file...")
+        if not _validate_audio_file(filepath):
+            raise Exception("Audio file is invalid or empty. Please ensure the file contains valid audio data.")
+        
+        # 2. Transcribe
         print(f"[Job {job_id}] Starting transcription for {filepath}")
         jobs[job_id]['status'] = 'transcribing'
         if not whisper_model:
             raise Exception("Whisper model not loaded")
         
-        result = whisper_model.transcribe(filepath, fp16=False) # fp16=False for CPU
-        transcript = result["text"].strip()
-        jobs[job_id]['transcript'] = transcript
-        print(f"[Job {job_id}] Transcription complete, length: {len(transcript)}")
-
-        # 2. Summarize
+        try:
+            result = whisper_model.transcribe(filepath, fp16=False) # fp16=False for CPU
+            transcript = result["text"].strip()
+            
+            if not transcript or len(transcript.strip()) == 0:
+                raise Exception("Transcription resulted in empty text. The audio may not contain any speech.")
+            
+            jobs[job_id]['transcript'] = transcript
+            print(f"[Job {job_id}] Transcription complete, length: {len(transcript)}")
+        except RuntimeError as e:
+            if "reshape" in str(e).lower() or "tensor" in str(e).lower():
+                raise Exception("Audio processing failed: The audio file may be corrupted or in an unsupported format.")
+            raise
+        
+        # 3. Summarize
         print(f"[Job {job_id}] Starting summarization...")
         jobs[job_id]['status'] = 'summarizing'
         summary = _summarize_text_internal(transcript, mode)
         jobs[job_id]['summary'] = summary
         print(f"[Job {job_id}] Summarization complete.")
 
-        # 3. Finish
+        # 4. Finish
         jobs[job_id]['status'] = 'complete'
 
     except Exception as e:
@@ -233,7 +359,7 @@ def process_video_job(job_id: str, filepath: str, mode: str):
         jobs[job_id]['status'] = 'error'
         jobs[job_id]['error'] = str(e)
     finally:
-        # 4. Cleanup
+        # 5. Cleanup
         if os.path.exists(filepath):
             try:
                 os.remove(filepath)

@@ -526,6 +526,8 @@ export default function VoicePanel() {
             >
               <option value="default">Ringkasan Default</option>
               <option value="cornell">Peta Konsep Cornell</option>
+              <option value="prosedural">Panduan Prosedural</option>
+              <option value="qa">Prediksi Soal & Jawaban</option>
             </select>
              {/* =================================== */}
           </div>
