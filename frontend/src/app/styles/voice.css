@@ -137,7 +137,9 @@
 
 .summary-col .summary-header {
   display: flex;
-  justify-content: flex-end;
+  /* space-between to put label on left and status on right */
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 8px;
   font-size: 12px;
   color: #666;

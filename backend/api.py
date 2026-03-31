@@ -486,48 +486,50 @@ def is_youtube_url(url: str) -> bool:
     return any(x in url_lower for x in ['youtube.com', 'youtu.be', 'youtube-nocookie.com'])
 
 
+import subprocess
+import os
+import traceback
+
 def download_youtube_audio(url: str, job_id: str) -> tuple:
-    """
-    Download audio from YouTube video.
-    Returns: (filepath, file_ext) or (None, None) if failed
-    """
     try:
         print(f"[YouTube] Downloading from: {url}")
-        
-        output_path = os.path.join(app.config['UPLOAD_FOLDER'], f"yt_{job_id}")
-        
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': output_path,
-            'quiet': False,
-            'no_warnings': False,
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            title = info.get('title', 'video')
-            print(f"[YouTube] Downloaded: {title}")
-        
-        # Find the downloaded file
-        filepath = f"{output_path}.mp3"
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        ytdlp_path = os.path.join(base_dir, "yt-dlp.exe")
+
+        output_base = os.path.join(app.config['UPLOAD_FOLDER'], f"yt_{job_id}")
+
+        command = [
+            ytdlp_path,
+            "--js-runtimes", "node",
+            "--remote-components", "ejs:github",
+            "-f", "bestaudio",
+            "--extract-audio",
+            "--audio-format", "mp3",
+            "--audio-quality", "192K",
+            "-o", output_base + ".%(ext)s",
+            url
+        ]
+
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        print(result.stdout)
+        print(result.stderr)
+
+        filepath = output_base + ".mp3"
+
         if os.path.exists(filepath):
             file_size = os.path.getsize(filepath)
             print(f"[YouTube] File saved: {filepath}, size: {file_size} bytes")
-            return filepath, 'mp3'
+            return filepath, "mp3"
         else:
-            print(f"[YouTube] ERROR: File not found at {filepath}")
+            print("[YouTube] ERROR: File not found")
             return None, None
-            
+
     except Exception as e:
         print(f"[YouTube] ERROR: {e}")
         traceback.print_exc()
         return None, None
-
 
 @app.route('/upload_video', methods=['POST'])
 def upload_video():

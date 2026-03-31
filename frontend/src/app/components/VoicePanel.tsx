@@ -14,6 +14,9 @@ type Maybe<T> = T | null;
 type UploadStatus = "idle" | "uploading" | "queued" | "transcribing" | "summarizing" | "complete" | "error";
 
 
+// set to false to completely bypass websocket code (will still keep code commented-out logically)
+const ENABLE_WEBSOCKET = false;
+
 const BACKEND_ORIGIN =
   process.env.NEXT_PUBLIC_BACKEND_ORIGIN || "http://127.0.0.1:5001";
 
@@ -124,35 +127,41 @@ export default function VoicePanel() {
       .then((data) => { if (data.mode) { currentModeRef.current = data.mode; setSelectedMode(data.mode); } })
       .catch((err) => console.error("Gagal mengambil mode:", err));
 
-    const socket = io(BACKEND_ORIGIN, { transports: ["websocket"] });
-    socketRef.current = socket;
+    if (!ENABLE_WEBSOCKET) {
+      setConnectionStatus("⚠️ WS disabled");
+    }
 
-    socket.on("connect", () => setConnectionStatus("🟢 Terhubung"));
-    socket.on("disconnect", () => setConnectionStatus("🔴 Terputus"));
-    socket.on("connect_error", () => setConnectionStatus("🟡 Gagal"));
+    if (ENABLE_WEBSOCKET) {
+      const socket = io(BACKEND_ORIGIN, { transports: ["websocket"] });
+      socketRef.current = socket;
 
-    socket.on("summary_stream", (data: any) => {
-      const editor = summaryEditorRef.current;
-      if (!editor) return;
-      
-      if (data.error) {
-        showToast(`Error: ${data.error}`, "error");
-        summarizeInFlightRef.current = false;
-        return;
-      }
+      socket.on("connect", () => setConnectionStatus("🟢 Terhubung"));
+      socket.on("disconnect", () => setConnectionStatus("🔴 Terputus"));
+      socket.on("connect_error", () => setConnectionStatus("🟡 Gagal"));
 
-      let nextSummary = lastFinalSummaryRef.current;
-      if (data.token) nextSummary += data.token;
-      if (data.final) nextSummary = data.final.trim();
-      
-      renderDiff(lastFinalSummaryRef.current, nextSummary, editor, clearHlTimerRef);
-      lastFinalSummaryRef.current = nextSummary;
-      
-      if (data.end) {
-        summarizeInFlightRef.current = false;
-        localStorage.setItem(LS_LAST_SUMMARY_KEY, nextSummary.trim());
-      }
-    });
+      socket.on("summary_stream", (data: any) => {
+        const editor = summaryEditorRef.current;
+        if (!editor) return;
+        
+        if (data.error) {
+          showToast(`Error: ${data.error}`, "error");
+          summarizeInFlightRef.current = false;
+          return;
+        }
+
+        let nextSummary = lastFinalSummaryRef.current;
+        if (data.token) nextSummary += data.token;
+        if (data.final) nextSummary = data.final.trim();
+        
+        renderDiff(lastFinalSummaryRef.current, nextSummary, editor, clearHlTimerRef);
+        lastFinalSummaryRef.current = nextSummary;
+        
+        if (data.end) {
+          summarizeInFlightRef.current = false;
+          localStorage.setItem(LS_LAST_SUMMARY_KEY, nextSummary.trim());
+        }
+      });
+    }
     
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -194,7 +203,9 @@ export default function VoicePanel() {
     
     return () => {
       mounted = false;
-      socket.disconnect(); 
+      if (ENABLE_WEBSOCKET && socketRef.current) {
+        socketRef.current.disconnect();
+      }
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
   }, []);
@@ -256,7 +267,11 @@ export default function VoicePanel() {
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         const errorMsg = errData.error || `HTTP ${res.status}: ${res.statusText}`;
-        throw new Error(errorMsg);
+        // don't throw so stack trace doesn't surface; handle gracefully
+        setUploadStatus('error');
+        setUploadError(errorMsg);
+        showToast(`Error: ${errorMsg}`, 'error');
+        return;
       }
       
       const data = await res.json();
@@ -274,16 +289,39 @@ export default function VoicePanel() {
     }
   };
 
-  const requestSummarize = (text: string, showUI: boolean = true) => {
-    if (summarizeInFlightRef.current || !text || !socketRef.current?.connected) return;
+  const requestSummarize = async (text: string, showUI: boolean = true) => {
+    if (summarizeInFlightRef.current || !text) return;
 
     summarizeInFlightRef.current = true;
     
     if (showUI && summaryEditorRef.current) {
         summaryEditorRef.current.innerHTML = "<i>Memproses ringkasan...</i>";
     }
-    
-    socketRef.current.emit("summarize_stream", { text, mode: currentModeRef.current });
+
+    if (ENABLE_WEBSOCKET && socketRef.current?.connected) {
+        socketRef.current.emit("summarize_stream", { text, mode: currentModeRef.current });
+    } else {
+        // fallback HTTP summarize
+        try {
+            const res = await fetch(`${BACKEND_ORIGIN}/summarize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, mode: currentModeRef.current })
+            });
+            const data = await res.json();
+            if (data.summary) {
+                const summary = data.summary;
+                if (summaryEditorRef.current) summaryEditorRef.current.innerHTML = mdToHtml(summary);
+                lastFinalSummaryRef.current = summary;
+            } else if (data.error) {
+                showToast(`Error: ${data.error}`, 'error');
+            }
+        } catch (err: any) {
+            showToast(`Error: ${err.message}`, 'error');
+        } finally {
+            summarizeInFlightRef.current = false;
+        }
+    }
   };
   
     // ===================================
@@ -583,7 +621,10 @@ export default function VoicePanel() {
           {/* Kolom Kanan */}
           <div className="column summary-col">
             <div className="summary-header">
-              <span className="connection-status">{connectionStatus}</span>
+              <span>Ringkasan</span>
+              {ENABLE_WEBSOCKET && (
+                <span className="connection-status">{connectionStatus}</span>
+              )}
             </div>
             <div
               ref={summaryEditorRef}
